@@ -15,7 +15,8 @@ import {
   Search,
   Loader,
   CheckCircle,
-  XCircle
+  XCircle,
+  AlertTriangle
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -28,11 +29,10 @@ import {
 } from 'recharts';
 
 /**
- * SALINITY MONITORING DASHBOARD (AI ENABLED)
+ * SMART BUOY DASHBOARD (CALUMPIT RIVER MONITOR)
  * ------------------------------------------
- * Updates:
- * - Increased Logo size in Sidebar and Mobile Header.
- * - Maintained Gemini 1.5 Flash integration.
+ * Context: Monitors river salinity for Freshwater (Tilapia/Hito) and 
+ * Brackish (Bangus/Apahap) species.
  */
 
 const App = () => {
@@ -40,19 +40,20 @@ const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Sensor Data State
-  const [salinity, setSalinity] = useState(33.5); 
-  const [temperature, setTemperature] = useState(28.5);
-  const [batteryLevel, setBatteryLevel] = useState(85);
+  // Defaulting to 1.5 ppt (Typical river/estuary mix)
+  const [salinity, setSalinity] = useState(1.5); 
+  const [temperature, setTemperature] = useState(29.2);
+  const [batteryLevel, setBatteryLevel] = useState(92);
   
   // Historic Data for Chart
   const [historyData, setHistoryData] = useState([
-    { time: '00:00', value: 32.1 },
-    { time: '04:00', value: 32.4 },
-    { time: '08:00', value: 33.2 },
-    { time: '12:00', value: 33.8 },
-    { time: '16:00', value: 33.5 },
-    { time: '20:00', value: 33.1 },
-    { time: '24:00', value: 33.5 },
+    { time: '00:00', value: 0.5 },
+    { time: '04:00', value: 0.8 },
+    { time: '08:00', value: 1.2 }, // High tide mixing starts
+    { time: '12:00', value: 2.5 },
+    { time: '16:00', value: 1.8 },
+    { time: '20:00', value: 1.1 },
+    { time: '24:00', value: 0.9 },
   ]);
 
   // AI State
@@ -64,7 +65,7 @@ const App = () => {
   const [isAnalyzingTrend, setIsAnalyzingTrend] = useState(false);
 
   // --- GEMINI API CONFIGURATION ---
-  const apiKey = "AIzaSyAYcwWHHszwtaau9HJSz6WZQZ0lYGlzbQE"; 
+  const apiKey = "AIzaSyDY9FTlOM8dOEoxyP5va_JoTEbisZ7dwoU"; 
 
   // --- GEMINI API INTEGRATION ---
 
@@ -110,16 +111,19 @@ const App = () => {
     setSpeciesResult(null);
 
     const prompt = `
-      Act as an expert marine biologist.
-      I have a fish tank with these CURRENT parameters:
+      Act as a fisheries expert in the Philippines (specifically Central Luzon/Calumpit rivers).
+      
+      CURRENT WATER CONDITIONS:
       - Salinity: ${salinity.toFixed(1)} ppt
       - Temperature: ${temperature.toFixed(1)} °C
       
-      The user wants to add this species: "${speciesQuery}".
+      The user asks about: "${speciesQuery}".
       
-      Is this species compatible with my current tank conditions?
+      Is this specific fish/crustacean suitable for the CURRENT salinity?
+      Consider common species like Tilapia, Hito, Dalag (Freshwater) vs Bangus, Apahap (Brackish).
+      
       Reply with a JSON object strictly in this format (no markdown):
-      { "compatible": boolean, "reason": "short explanation (max 15 words)" }
+      { "compatible": boolean, "reason": "Tagalog explanation (max 15 words)" }
     `;
 
     try {
@@ -144,10 +148,12 @@ const App = () => {
 
     const historyStr = historyData.map(d => `${d.time}: ${d.value}ppt`).join(', ');
     const prompt = `
-      Analyze this aquarium salinity trend over the last 24h: [${historyStr}].
+      Analyze this salinity trend for a River/Estuary buoy (Calumpit area): [${historyStr}].
       Current Value: ${salinity.toFixed(1)}ppt.
-      Provide a 2-sentence analysis for a fish tank owner. Is it stable? Is there a dangerous spike?
-      Sound professional but friendly.
+      
+      Is this normal tidal mixing or is there saltwater intrusion? 
+      Is it safe for freshwater crops and fish like Tilapia?
+      Answer in Taglish, professional but friendly. Max 2 sentences.
     `;
 
     const text = await callGemini(prompt);
@@ -155,35 +161,51 @@ const App = () => {
     setIsAnalyzingTrend(false);
   };
 
-  // --- EXISTING APP LOGIC ---
+  // --- LOGIC: FRESHWATER VS BRACKISH VS SALTWATER INTRUSION ---
 
   const getEnvironmentStatus = (sal) => {
-    if (sal >= 30) return { 
-      type: 'Saltwater', 
-      message: 'SALT FISH DETECTED', 
-      sub: 'Conditions optimal for marine life.', 
-      color: 'from-blue-400 to-cyan-500',
-    };
-    if (sal >= 0.5 && sal < 30) return { 
-      type: 'Brackish', 
-      message: 'BRACKISH WATER', 
-      sub: 'Mix of fresh and salt water.', 
-      color: 'from-teal-400 to-emerald-500',
-    };
-    return { 
+    // 0 - 2 PPT: Pure Freshwater (Ideal for Hito, Dalag, Tilapia)
+    if (sal <= 2.0) return { 
       type: 'Freshwater', 
-      message: 'NO SALT FISH', 
-      sub: 'Freshwater environment detected.', 
-      color: 'from-indigo-400 to-blue-500',
+      message: 'FRESHWATER', 
+      sub: 'Ideal for Tilapia, Hito, & Dalag.', 
+      color: 'from-emerald-400 to-green-600',
+      icon: <Fish size={80} className="mb-6 drop-shadow-md opacity-90" />
+    };
+    
+    // 2.1 - 10 PPT: Brackish (Mix - Good for Bangus, Apahap, Hipon)
+    if (sal > 2.0 && sal <= 10.0) return { 
+      type: 'Brackish', 
+      message: 'BRACKISH MIX', 
+      sub: 'Good for Bangus, Apahap & Hipon.', 
+      color: 'from-blue-400 to-cyan-600',
+      icon: <Droplets size={80} className="mb-6 drop-shadow-md opacity-90" />
+    };
+
+    // > 10 PPT: High Salinity (Saltwater Intrusion Warning)
+    return { 
+      type: 'HighSalinity', 
+      message: 'SALT INTRUSION', 
+      sub: 'Warning: Too salty for pure freshwater fish.', 
+      color: 'from-orange-400 to-red-500',
+      icon: <AlertTriangle size={80} className="mb-6 drop-shadow-md opacity-90" />
     };
   };
 
   const status = getEnvironmentStatus(salinity);
 
+  // Simulate River Data (Fluctuating Salinity due to tides)
   useEffect(() => {
     const interval = setInterval(() => {
-      setSalinity(prev => Math.max(0, Math.min(40, prev + (Math.random() - 0.5) * 0.5)));
-      setTemperature(prev => Math.max(20, Math.min(35, prev + (Math.random() - 0.5) * 0.2)));
+      // Fluctuate between 0.5 and 5.0 (River mixing)
+      setSalinity(prev => {
+        const change = (Math.random() - 0.5) * 0.3;
+        let newValue = prev + change;
+        // Keep within river/brackish limits
+        return Math.max(0.1, Math.min(12.0, newValue)); 
+      });
+      
+      setTemperature(prev => Math.max(26, Math.min(32, prev + (Math.random() - 0.5) * 0.1)));
       
       setHistoryData(prev => {
         const newData = [...prev.slice(1), { 
@@ -231,13 +253,13 @@ const App = () => {
         <nav className="mt-8 px-4 space-y-2">
           <SidebarItem 
             icon={<Activity size={20} />} 
-            label="Dashboard" 
+            label="Monitor" 
             active={activeTab === 'Dashboard'} 
             onClick={() => setActiveTab('Dashboard')}
           />
           <SidebarItem 
             icon={<History size={20} />} 
-            label="History" 
+            label="Trends" 
             active={activeTab === 'History'} 
             onClick={() => setActiveTab('History')}
           />
@@ -249,14 +271,14 @@ const App = () => {
           />
         </nav>
 
-        {/* AI Promo in Sidebar */}
-        <div className="absolute bottom-8 left-4 right-4 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg">
+        {/* AI Promo */}
+        <div className="absolute bottom-8 left-4 right-4 bg-gradient-to-br from-sky-500 to-blue-600 rounded-2xl p-4 text-white shadow-lg">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles size={16} className="text-yellow-300" />
-            <span className="font-bold text-sm">AI Powered</span>
+            <span className="font-bold text-sm">AI Analysis</span>
           </div>
-          <p className="text-xs text-indigo-100 leading-relaxed">
-            Your dashboard is now connected to Gemini for real-time analysis.
+          <p className="text-xs text-sky-100 leading-relaxed">
+            Smart Buoy connected for river salinity monitoring.
           </p>
         </div>
       </aside>
@@ -294,7 +316,7 @@ const App = () => {
                 </div>
 
                 <div className="z-10 animate-float">
-                  <Fish size={80} className="mb-6 drop-shadow-md opacity-90" />
+                  {status.icon}
                 </div>
                 
                 <h2 className="text-3xl lg:text-4xl font-black uppercase tracking-wide leading-tight z-10 drop-shadow-sm">
@@ -315,7 +337,7 @@ const App = () => {
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between group hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-slate-500 font-medium text-sm">Salinity Level</p>
+                      <p className="text-slate-500 font-medium text-sm">River Salinity</p>
                       <div className="flex items-baseline mt-1">
                         <h3 className="text-4xl font-bold text-sky-600">{salinity.toFixed(1)}</h3>
                         <span className="text-lg text-slate-400 font-medium ml-1">ppt</span>
@@ -369,17 +391,17 @@ const App = () => {
                   </div>
                 </div>
 
-                {/* New AI Widget: Species Checker */}
+                {/* New AI Widget: Species Checker - Blue Theme */}
                 <div className="md:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <Sparkles size={100} className="text-purple-500" />
+                    <Sparkles size={100} className="text-sky-500" />
                   </div>
                   
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="p-2 bg-purple-100 rounded-lg text-purple-600">
+                    <div className="p-2 bg-sky-100 rounded-lg text-sky-600">
                       <Sparkles size={20} />
                     </div>
-                    <h3 className="font-bold text-slate-700">Smart Species Check</h3>
+                    <h3 className="font-bold text-slate-700">Smart Fish Checker</h3>
                   </div>
 
                   <div className="flex gap-2 z-10">
@@ -387,8 +409,8 @@ const App = () => {
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={16} />
                       <input 
                         type="text" 
-                        placeholder="e.g. Clownfish, Guppy..." 
-                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 text-sm"
+                        placeholder="e.g. Tilapia, Bangus, Hito..." 
+                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-sm"
                         value={speciesQuery}
                         onChange={(e) => setSpeciesQuery(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSpeciesCheck()}
@@ -420,11 +442,11 @@ const App = () => {
               </div>
             </div>
 
-            {/* Bottom Chart Area with AI Analysis */}
+            {/* Bottom Chart Area with AI Analysis - Blue Theme */}
             <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-sm border border-slate-100">
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-800">Real-Time Salinity Trend</h3>
+                  <h3 className="text-lg font-bold text-slate-800">River Salinity Trends</h3>
                   <p className="text-sm text-slate-400">Last 24 Hours</p>
                 </div>
                 
@@ -432,21 +454,21 @@ const App = () => {
                   <button 
                     onClick={handleTrendAnalysis}
                     disabled={isAnalyzingTrend}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-full text-sm font-semibold transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-sky-50 hover:bg-sky-100 text-sky-600 rounded-full text-sm font-semibold transition-colors disabled:opacity-50"
                   >
                     {isAnalyzingTrend ? <Loader size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                    {isAnalyzingTrend ? 'Analyzing...' : 'Analyze Trend with AI'}
+                    {isAnalyzingTrend ? 'Analyzing...' : 'Analyze with Buoy AI'}
                   </button>
                 </div>
               </div>
 
               {trendAnalysis && (
-                <div className="mb-6 bg-gradient-to-r from-indigo-50 to-white border border-indigo-100 p-4 rounded-2xl flex gap-3 animate-in fade-in duration-500">
+                <div className="mb-6 bg-gradient-to-r from-sky-50 to-white border border-sky-100 p-4 rounded-2xl flex gap-3 animate-in fade-in duration-500">
                   <div className="bg-white p-2 rounded-full h-fit shadow-sm">
-                    <Sparkles size={16} className="text-indigo-500" />
+                    <Sparkles size={16} className="text-sky-500" />
                   </div>
                   <div className="text-sm text-slate-700 leading-relaxed">
-                    <span className="font-bold text-indigo-900 block mb-1">AI Insight</span>
+                    <span className="font-bold text-sky-900 block mb-1">AI Report</span>
                     {trendAnalysis}
                   </div>
                 </div>
@@ -470,7 +492,7 @@ const App = () => {
                       dy={10}
                     />
                     <YAxis 
-                      domain={[25, 40]} 
+                      domain={[0, 15]} // Adjusted scale for river data (0-15 ppt)
                       axisLine={false} 
                       tickLine={false} 
                       tick={{ fill: '#94a3b8', fontSize: 12 }} 
