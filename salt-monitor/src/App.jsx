@@ -18,6 +18,7 @@ import {
   XCircle,
   AlertTriangle
 } from 'lucide-react';
+
 import { 
   AreaChart, 
   Area, 
@@ -29,10 +30,11 @@ import {
 } from 'recharts';
 
 /**
- * SMART BUOY DASHBOARD (CALUMPIT RIVER MONITOR)
+ * SALINITY MONITORING DASHBOARD (AI ENABLED)
  * ------------------------------------------
- * Context: Monitors river salinity for Freshwater (Tilapia/Hito) and 
- * Brackish (Bangus/Apahap) species.
+ * Design Update:
+ * - Applied "Sky Blue" shade (from user screenshot) consistently across Sidebar and AI Cards.
+ * - Removed darker Royal Blue tones.
  */
 
 const App = () => {
@@ -40,7 +42,6 @@ const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Sensor Data State
-  // Defaulting to 1.5 ppt (Typical river/estuary mix)
   const [salinity, setSalinity] = useState(1.5); 
   const [temperature, setTemperature] = useState(29.2);
   const [batteryLevel, setBatteryLevel] = useState(92);
@@ -49,7 +50,7 @@ const App = () => {
   const [historyData, setHistoryData] = useState([
     { time: '00:00', value: 0.5 },
     { time: '04:00', value: 0.8 },
-    { time: '08:00', value: 1.2 }, // High tide mixing starts
+    { time: '08:00', value: 1.2 },
     { time: '12:00', value: 2.5 },
     { time: '16:00', value: 1.8 },
     { time: '20:00', value: 1.1 },
@@ -111,19 +112,16 @@ const App = () => {
     setSpeciesResult(null);
 
     const prompt = `
-      Act as a fisheries expert in the Philippines (specifically Central Luzon/Calumpit rivers).
-      
-      CURRENT WATER CONDITIONS:
+      Act as an expert marine biologist.
+      I have a fish tank with these CURRENT parameters:
       - Salinity: ${salinity.toFixed(1)} ppt
       - Temperature: ${temperature.toFixed(1)} °C
       
-      The user asks about: "${speciesQuery}".
+      The user wants to add this species: "${speciesQuery}".
       
-      Is this specific fish/crustacean suitable for the CURRENT salinity?
-      Consider common species like Tilapia, Hito, Dalag (Freshwater) vs Bangus, Apahap (Brackish).
-      
+      Is this species compatible with my current tank conditions?
       Reply with a JSON object strictly in this format (no markdown):
-      { "compatible": boolean, "reason": "Tagalog explanation (max 15 words)" }
+      { "compatible": boolean, "reason": "short explanation (max 15 words)" }
     `;
 
     try {
@@ -148,12 +146,10 @@ const App = () => {
 
     const historyStr = historyData.map(d => `${d.time}: ${d.value}ppt`).join(', ');
     const prompt = `
-      Analyze this salinity trend for a River/Estuary buoy (Calumpit area): [${historyStr}].
+      Analyze this aquarium salinity trend over the last 24h: [${historyStr}].
       Current Value: ${salinity.toFixed(1)}ppt.
-      
-      Is this normal tidal mixing or is there saltwater intrusion? 
-      Is it safe for freshwater crops and fish like Tilapia?
-      Answer in Taglish, professional but friendly. Max 2 sentences.
+      Provide a 2-sentence analysis for a fish tank owner. Is it stable? Is there a dangerous spike?
+      Sound professional but friendly.
     `;
 
     const text = await callGemini(prompt);
@@ -161,28 +157,25 @@ const App = () => {
     setIsAnalyzingTrend(false);
   };
 
-  // --- LOGIC: FRESHWATER VS BRACKISH VS SALTWATER INTRUSION ---
+  // --- EXISTING APP LOGIC ---
 
   const getEnvironmentStatus = (sal) => {
-    // 0 - 2 PPT: Pure Freshwater (Ideal for Hito, Dalag, Tilapia)
     if (sal <= 2.0) return { 
       type: 'Freshwater', 
       message: 'FRESHWATER', 
       sub: 'Ideal for Tilapia, Hito, & Dalag.', 
       color: 'from-emerald-400 to-green-600',
-      icon: <Fish size={80} className="mb-6 drop-shadow-md opacity-90" />
+      icon: <Fish size={90} className="mb-6 drop-shadow-md opacity-90" />
     };
     
-    // 2.1 - 10 PPT: Brackish (Mix - Good for Bangus, Apahap, Hipon)
     if (sal > 2.0 && sal <= 10.0) return { 
       type: 'Brackish', 
       message: 'BRACKISH MIX', 
       sub: 'Good for Bangus, Apahap & Hipon.', 
-      color: 'from-blue-400 to-cyan-600',
-      icon: <Droplets size={80} className="mb-6 drop-shadow-md opacity-90" />
+      color: 'from-sky-400 to-cyan-600', // Adjusted to match Sky theme
+      icon: <Fish size={90} className="mb-6 drop-shadow-md opacity-90" />
     };
 
-    // > 10 PPT: High Salinity (Saltwater Intrusion Warning)
     return { 
       type: 'HighSalinity', 
       message: 'SALT INTRUSION', 
@@ -194,14 +187,11 @@ const App = () => {
 
   const status = getEnvironmentStatus(salinity);
 
-  // Simulate River Data (Fluctuating Salinity due to tides)
   useEffect(() => {
     const interval = setInterval(() => {
-      // Fluctuate between 0.5 and 5.0 (River mixing)
       setSalinity(prev => {
         const change = (Math.random() - 0.5) * 0.3;
         let newValue = prev + change;
-        // Keep within river/brackish limits
         return Math.max(0.1, Math.min(12.0, newValue)); 
       });
       
@@ -237,7 +227,6 @@ const App = () => {
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="p-8 flex items-center gap-3">
-          {/* Logo Image Placeholder */}
           <img 
             src="image.png" 
             alt="Aqualiv Logo" 
@@ -271,13 +260,13 @@ const App = () => {
           />
         </nav>
 
-        {/* AI Promo */}
-        <div className="absolute bottom-8 left-4 right-4 bg-gradient-to-br from-sky-500 to-blue-600 rounded-2xl p-4 text-white shadow-lg">
+        {/* AI Promo - Updated to Specific Sky Blue Shade */}
+        <div className="absolute bottom-8 left-4 right-4 bg-gradient-to-br from-sky-400 to-sky-600 rounded-2xl p-4 text-white shadow-lg shadow-sky-200">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles size={16} className="text-yellow-300" />
             <span className="font-bold text-sm">AI Analysis</span>
           </div>
-          <p className="text-xs text-sky-100 leading-relaxed">
+          <p className="text-xs text-sky-50 leading-relaxed">
             Smart Buoy connected for river salinity monitoring.
           </p>
         </div>
@@ -287,7 +276,6 @@ const App = () => {
       <main className="flex-1 flex flex-col h-full overflow-hidden relative">
         <header className="lg:hidden h-16 bg-white border-b flex items-center px-4 justify-between z-10">
           <div className="flex items-center gap-2">
-            {/* Mobile Logo Image Placeholder */}
             <img 
               src="image.png" 
               alt="Aqualiv Logo" 
@@ -391,7 +379,7 @@ const App = () => {
                   </div>
                 </div>
 
-                {/* New AI Widget: Species Checker - Blue Theme */}
+                {/* New AI Widget: Species Checker - Consistent Sky Blue */}
                 <div className="md:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-4 opacity-10">
                     <Sparkles size={100} className="text-sky-500" />
@@ -442,7 +430,7 @@ const App = () => {
               </div>
             </div>
 
-            {/* Bottom Chart Area with AI Analysis - Blue Theme */}
+            {/* Bottom Chart Area with AI Analysis - Consistent Sky Blue */}
             <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-sm border border-slate-100">
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                 <div>
@@ -492,7 +480,7 @@ const App = () => {
                       dy={10}
                     />
                     <YAxis 
-                      domain={[0, 15]} // Adjusted scale for river data (0-15 ppt)
+                      domain={[0, 15]} // Adjusted scale for river data
                       axisLine={false} 
                       tickLine={false} 
                       tick={{ fill: '#94a3b8', fontSize: 12 }} 
@@ -540,19 +528,20 @@ const App = () => {
   );
 };
 
+// --- UPDATED SIDEBAR ITEM TO MATCH SKY BLUE THEME ---
 const SidebarItem = ({ icon, label, active, onClick }) => (
   <button 
     onClick={onClick}
     className={`
       w-full flex items-center gap-4 px-4 py-4 rounded-xl transition-all duration-200 group
       ${active 
-        ? 'bg-sky-100 text-sky-900 shadow-sm font-semibold' 
+        ? 'bg-gradient-to-br from-sky-400 to-sky-600 text-white shadow-md shadow-sky-200 font-semibold' 
         : 'text-slate-500 hover:bg-white hover:text-sky-600 hover:shadow-sm'
       }
     `}
   >
     <div className={`
-      ${active ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}
+      ${active ? 'text-white' : 'text-slate-400 group-hover:text-sky-500'}
     `}>
       {icon}
     </div>
