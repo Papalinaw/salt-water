@@ -65,7 +65,7 @@ const App = () => {
   const [isAnalyzingTrend, setIsAnalyzingTrend] = useState(false);
 
   // --- GEMINI API CONFIGURATION ---
-  const apiKey = "AIzaSyDY9FTlOM8dOEoxyP5va_JoTEbisZ7dwoU"; 
+  const apiKey = "AIzaSyA0RnRy4rNomIjCCVIUQyg0m6Ao2wg9-wo"; 
 
   // --- GEMINI API INTEGRATION ---
 
