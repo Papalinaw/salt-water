@@ -3,20 +3,12 @@ import {
   Activity, 
   History, 
   Bell, 
-  Settings, 
-  Wifi, 
   Thermometer, 
   Droplets, 
   Fish, 
   Menu,
-  Battery,
-  Signal,
-  Sparkles,
-  Search,
-  Loader,
-  CheckCircle,
-  XCircle,
-  AlertTriangle
+  AlertTriangle,
+  Wifi 
 } from 'lucide-react';
 
 import { 
@@ -30,11 +22,11 @@ import {
 } from 'recharts';
 
 /**
- * SALINITY MONITORING DASHBOARD (AI ENABLED)
+ * SALINITY MONITORING DASHBOARD (Clean Version - Fixed)
  * ------------------------------------------
- * Design Update:
- * - Applied "Sky Blue" shade (from user screenshot) consistently across Sidebar and AI Cards.
- * - Removed darker Royal Blue tones.
+ * Updates:
+ * - Updated Fish List display logic to be accurate and comma-separated.
+ * - Lists specific Calumpit species based on Salt Content (TDS).
  */
 
 const App = () => {
@@ -44,7 +36,6 @@ const App = () => {
   // Sensor Data State
   const [salinity, setSalinity] = useState(1.5); 
   const [temperature, setTemperature] = useState(29.2);
-  const [batteryLevel, setBatteryLevel] = useState(92);
   
   // Historic Data for Chart
   const [historyData, setHistoryData] = useState([
@@ -57,129 +48,39 @@ const App = () => {
     { time: '24:00', value: 0.9 },
   ]);
 
-  // AI State
-  const [speciesQuery, setSpeciesQuery] = useState('');
-  const [speciesResult, setSpeciesResult] = useState(null);
-  const [isCheckingSpecies, setIsCheckingSpecies] = useState(false);
-  
-  const [trendAnalysis, setTrendAnalysis] = useState(null);
-  const [isAnalyzingTrend, setIsAnalyzingTrend] = useState(false);
-
-  // --- GEMINI API CONFIGURATION ---
-  const apiKey = "AIzaSyA0RnRy4rNomIjCCVIUQyg0m6Ao2wg9-wo"; 
-
-  // --- GEMINI API INTEGRATION ---
-
-  const callGemini = async (prompt) => {
-    if (!apiKey) {
-      alert("Please enter your API Key in src/App.jsx code.");
-      return "API Key missing.";
-    }
-
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
-          })
-        }
-      );
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        console.error("API Error:", data);
-        if (data.error?.code === 429) {
-           throw new Error("Quota exceeded. Please wait a minute and try again.");
-        }
-        throw new Error(data.error?.message || `Error ${response.status}`);
-      }
-      
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
-
-    } catch (error) {
-      console.error("Gemini Connection Error:", error);
-      return `Error: ${error.message}`;
-    }
-  };
-
-  const handleSpeciesCheck = async () => {
-    if (!speciesQuery.trim()) return;
-    setIsCheckingSpecies(true);
-    setSpeciesResult(null);
-
-    const prompt = `
-      Act as an expert marine biologist.
-      I have a fish tank with these CURRENT parameters:
-      - Salinity: ${salinity.toFixed(1)} ppt
-      - Temperature: ${temperature.toFixed(1)} °C
-      
-      The user wants to add this species: "${speciesQuery}".
-      
-      Is this species compatible with my current tank conditions?
-      Reply with a JSON object strictly in this format (no markdown):
-      { "compatible": boolean, "reason": "short explanation (max 15 words)" }
-    `;
-
-    try {
-      const text = await callGemini(prompt);
-      const jsonStr = text.replace(/```json|```/g, '').trim();
-      const result = JSON.parse(jsonStr);
-      setSpeciesResult(result);
-    } catch (e) {
-      console.error("JSON Error:", e);
-      setSpeciesResult({ 
-        compatible: false, 
-        reason: "AI connection error. Please try again." 
-      });
-    } finally {
-      setIsCheckingSpecies(false);
-    }
-  };
-
-  const handleTrendAnalysis = async () => {
-    setIsAnalyzingTrend(true);
-    setTrendAnalysis(null);
-
-    const historyStr = historyData.map(d => `${d.time}: ${d.value}ppt`).join(', ');
-    const prompt = `
-      Analyze this aquarium salinity trend over the last 24h: [${historyStr}].
-      Current Value: ${salinity.toFixed(1)}ppt.
-      Provide a 2-sentence analysis for a fish tank owner. Is it stable? Is there a dangerous spike?
-      Sound professional but friendly.
-    `;
-
-    const text = await callGemini(prompt);
-    setTrendAnalysis(text);
-    setIsAnalyzingTrend(false);
-  };
-
-  // --- EXISTING APP LOGIC ---
-
+  // --- LOGIC: FRESHWATER VS BRACKISH FISH LIST ---
   const getEnvironmentStatus = (sal) => {
-    if (sal <= 2.0) return { 
-      type: 'Freshwater', 
-      message: 'FRESHWATER', 
-      sub: 'Ideal for Tilapia, Hito, & Dalag.', 
-      color: 'from-emerald-400 to-green-600',
-      icon: <Fish size={90} className="mb-6 drop-shadow-md opacity-90" />
-    };
+    // 0 - 2 PPT: Pure Freshwater (Ilog Condition)
+    if (sal <= 2.0) {
+      // Listahan ng isdang pang-tabang
+      const fishList = "Tilapia, Hito, Dalag, Gurami, Ayungin, Martiniko, Biya, Carpa";
+      return { 
+        type: 'Freshwater', 
+        message: 'LOW SALT CONTENT', 
+        sub: `Available: ${fishList}`, // Comma-separated list
+        color: 'from-emerald-400 to-green-600',
+        icon: <Fish size={90} className="mb-6 drop-shadow-md opacity-90" />
+      };
+    }
     
-    if (sal > 2.0 && sal <= 10.0) return { 
-      type: 'Brackish', 
-      message: 'BRACKISH MIX', 
-      sub: 'Good for Bangus, Apahap & Hipon.', 
-      color: 'from-sky-400 to-cyan-600', // Adjusted to match Sky theme
-      icon: <Fish size={90} className="mb-6 drop-shadow-md opacity-90" />
-    };
+    // 2.1 - 10 PPT: Brackish (May halong alat/dagat)
+    if (sal > 2.0 && sal <= 10.0) {
+      // Listahan ng isdang kaya ang alat
+      const fishList = "Bangus, Apahap, Kanduli, Hipon, Sugpo, Talangka";
+      return { 
+        type: 'Brackish', 
+        message: 'MODERATE SALT', 
+        sub: `Available: ${fishList}`, // Comma-separated list
+        color: 'from-sky-400 to-cyan-600',
+        icon: <Fish size={90} className="mb-6 drop-shadow-md opacity-90" />
+      };
+    }
 
+    // > 10 PPT: High Salinity (Delikado na sa freshwater species)
     return { 
       type: 'HighSalinity', 
-      message: 'SALT INTRUSION', 
-      sub: 'Warning: Too salty for pure freshwater fish.', 
+      message: 'HIGH SALT CONTENT', 
+      sub: 'Warning: Saltwater Intrusion (Risk of Fish Kill)', 
       color: 'from-orange-400 to-red-500',
       icon: <AlertTriangle size={80} className="mb-6 drop-shadow-md opacity-90" />
     };
@@ -187,6 +88,7 @@ const App = () => {
 
   const status = getEnvironmentStatus(salinity);
 
+  // Simulation Loop
   useEffect(() => {
     const interval = setInterval(() => {
       setSalinity(prev => {
@@ -260,14 +162,14 @@ const App = () => {
           />
         </nav>
 
-        {/* AI Promo - Updated to Specific Sky Blue Shade */}
-        <div className="absolute bottom-8 left-4 right-4 bg-gradient-to-br from-sky-400 to-sky-600 rounded-2xl p-4 text-white shadow-lg shadow-sky-200">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles size={16} className="text-yellow-300" />
-            <span className="font-bold text-sm">AI Analysis</span>
+        {/* System Status */}
+        <div className="absolute bottom-8 left-4 right-4 bg-emerald-50 border border-emerald-100 rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center gap-2 mb-1 text-emerald-700">
+            <Wifi size={16} />
+            <span className="font-bold text-sm">System Online</span>
           </div>
-          <p className="text-xs text-sky-50 leading-relaxed">
-            Smart Buoy connected for river salinity monitoring.
+          <p className="text-xs text-emerald-600/80">
+            Connected to Smart Buoy
           </p>
         </div>
       </aside>
@@ -307,7 +209,7 @@ const App = () => {
                   {status.icon}
                 </div>
                 
-                <h2 className="text-3xl lg:text-4xl font-black uppercase tracking-wide leading-tight z-10 drop-shadow-sm">
+                <h2 className="text-3xl lg:text-4xl font-black uppercase tracking-wide leading-tight z-10 drop-shadow-sm mt-4">
                   {status.message}
                 </h2>
                 
@@ -321,11 +223,11 @@ const App = () => {
               {/* Right Side Stats Grid */}
               <div className="lg:col-span-7 grid grid-cols-1 md:grid-cols-2 gap-6">
                 
-                {/* Salinity Card */}
+                {/* Salt Content Card */}
                 <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between group hover:shadow-md transition-shadow">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-slate-500 font-medium text-sm">River Salinity</p>
+                      <p className="text-slate-500 font-medium text-sm">Salt Content (TDS)</p>
                       <div className="flex items-baseline mt-1">
                         <h3 className="text-4xl font-bold text-sky-600">{salinity.toFixed(1)}</h3>
                         <span className="text-lg text-slate-400 font-medium ml-1">ppt</span>
@@ -379,88 +281,17 @@ const App = () => {
                   </div>
                 </div>
 
-                {/* New AI Widget: Species Checker - Consistent Sky Blue */}
-                <div className="md:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col hover:shadow-md transition-shadow relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <Sparkles size={100} className="text-sky-500" />
-                  </div>
-                  
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="p-2 bg-sky-100 rounded-lg text-sky-600">
-                      <Sparkles size={20} />
-                    </div>
-                    <h3 className="font-bold text-slate-700">Smart Fish Checker</h3>
-                  </div>
-
-                  <div className="flex gap-2 z-10">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={16} />
-                      <input 
-                        type="text" 
-                        placeholder="e.g. Tilapia, Bangus, Hito..." 
-                        className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-sm"
-                        value={speciesQuery}
-                        onChange={(e) => setSpeciesQuery(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSpeciesCheck()}
-                      />
-                    </div>
-                    <button 
-                      onClick={handleSpeciesCheck}
-                      disabled={isCheckingSpecies}
-                      className="bg-slate-900 text-white px-4 rounded-xl font-medium text-sm hover:bg-slate-800 transition-colors disabled:opacity-50"
-                    >
-                      {isCheckingSpecies ? <Loader className="animate-spin" size={18} /> : 'Check'}
-                    </button>
-                  </div>
-
-                  {speciesResult && (
-                    <div className={`mt-4 p-3 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300 ${speciesResult.compatible ? 'bg-emerald-50 text-emerald-900' : 'bg-red-50 text-red-900'}`}>
-                      {speciesResult.compatible 
-                        ? <CheckCircle className="text-emerald-500 shrink-0" size={20} /> 
-                        : <XCircle className="text-red-500 shrink-0" size={20} />
-                      }
-                      <div>
-                        <p className="font-bold text-sm">{speciesResult.compatible ? 'Compatible!' : 'Not Recommended'}</p>
-                        <p className="text-xs opacity-80 mt-1">{speciesResult.reason}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
               </div>
             </div>
 
-            {/* Bottom Chart Area with AI Analysis - Consistent Sky Blue */}
+            {/* Bottom Chart Area */}
             <div className="bg-white rounded-3xl p-6 lg:p-8 shadow-sm border border-slate-100">
               <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-800">River Salinity Trends</h3>
+                  <h3 className="text-lg font-bold text-slate-800">Salt Content Trends</h3>
                   <p className="text-sm text-slate-400">Last 24 Hours</p>
                 </div>
-                
-                <div className="flex items-center gap-3">
-                  <button 
-                    onClick={handleTrendAnalysis}
-                    disabled={isAnalyzingTrend}
-                    className="flex items-center gap-2 px-4 py-2 bg-sky-50 hover:bg-sky-100 text-sky-600 rounded-full text-sm font-semibold transition-colors disabled:opacity-50"
-                  >
-                    {isAnalyzingTrend ? <Loader size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                    {isAnalyzingTrend ? 'Analyzing...' : 'Analyze with Buoy AI'}
-                  </button>
-                </div>
               </div>
-
-              {trendAnalysis && (
-                <div className="mb-6 bg-gradient-to-r from-sky-50 to-white border border-sky-100 p-4 rounded-2xl flex gap-3 animate-in fade-in duration-500">
-                  <div className="bg-white p-2 rounded-full h-fit shadow-sm">
-                    <Sparkles size={16} className="text-sky-500" />
-                  </div>
-                  <div className="text-sm text-slate-700 leading-relaxed">
-                    <span className="font-bold text-sky-900 block mb-1">AI Report</span>
-                    {trendAnalysis}
-                  </div>
-                </div>
-              )}
               
               <div className="h-64 w-full">
                 <ResponsiveContainer width="100%" height="100%">
@@ -480,11 +311,11 @@ const App = () => {
                       dy={10}
                     />
                     <YAxis 
-                      domain={[0, 15]} // Adjusted scale for river data
+                      domain={[0, 15]} 
                       axisLine={false} 
                       tickLine={false} 
                       tick={{ fill: '#94a3b8', fontSize: 12 }} 
-                      label={{ value: 'PPT', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 10 }}
+                      label={{ value: 'Salt (ppt)', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 10 }}
                     />
                     <Tooltip 
                       contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
@@ -528,20 +359,20 @@ const App = () => {
   );
 };
 
-// --- UPDATED SIDEBAR ITEM TO MATCH SKY BLUE THEME ---
+// Sidebar Item Component
 const SidebarItem = ({ icon, label, active, onClick }) => (
   <button 
     onClick={onClick}
     className={`
       w-full flex items-center gap-4 px-4 py-4 rounded-xl transition-all duration-200 group
       ${active 
-        ? 'bg-gradient-to-br from-sky-400 to-sky-600 text-white shadow-md shadow-sky-200 font-semibold' 
+        ? 'bg-sky-50 text-sky-900 shadow-sm font-semibold' 
         : 'text-slate-500 hover:bg-white hover:text-sky-600 hover:shadow-sm'
       }
     `}
   >
     <div className={`
-      ${active ? 'text-white' : 'text-slate-400 group-hover:text-sky-500'}
+      ${active ? 'text-blue-600' : 'text-slate-400 group-hover:text-blue-500'}
     `}>
       {icon}
     </div>
