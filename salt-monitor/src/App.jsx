@@ -31,6 +31,7 @@ import {
  * - Removed "Trends" from Sidebar.
  * - Added "Alerts" View with SMS (4G) and Push Notification toggles.
  * - Optimized for keypad phone users via SMS logic.
+ * - Time is now synced with real computer time.
  */
 
 const App = () => {
@@ -46,16 +47,20 @@ const App = () => {
   const [salinity, setSalinity] = useState(1.5); 
   const [temperature, setTemperature] = useState(29.2);
   
-  // Historic Data for Chart
-  const [historyData, setHistoryData] = useState([
-    { time: '10:00 AM', value: 0.5 },
-    { time: '10:30 AM', value: 0.8 },
-    { time: '11:00 AM', value: 1.2 },
-    { time: '11:30 AM', value: 2.5 },
-    { time: '12:00 PM', value: 1.8 },
-    { time: '12:30 PM', value: 1.1 },
-    { time: '01:00 PM', value: 0.9 },
-  ]);
+  // Historic Data for Chart (Initialized with Real Time)
+  const [historyData, setHistoryData] = useState(() => {
+    const data = [];
+    const now = new Date();
+    // Generate last 7 points ending at current time, 1 minute interval back
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() - (i * 60000)); // 60000ms = 1 minute
+      data.push({
+        time: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+        value: 1.5 + (Math.random() * 0.2) // Random initial value around current salinity
+      });
+    }
+    return data;
+  });
 
   // --- LOGIC: FRESHWATER VS BRACKISH FISH LIST ---
   const getEnvironmentStatus = (sal) => {
@@ -103,23 +108,26 @@ const App = () => {
       
       setTemperature(prev => Math.max(26, Math.min(32, prev + (Math.random() - 0.5) * 0.1)));
       
+      // Update chart with REAL SYSTEM TIME
       setHistoryData(prev => {
-        const lastEntry = prev[prev.length - 1];
-        const lastTime = new Date(`1/1/2024 ${lastEntry.time}`);
-        lastTime.setMinutes(lastTime.getMinutes() + 30);
-        const newTimeStr = lastTime.toLocaleTimeString('en-US', { 
-          hour: 'numeric', 
-          minute: '2-digit', 
-          hour12: true 
+        const now = new Date(); // real system time (computer time)
+
+        const newTimeStr = now.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
         });
 
-        const newData = [...prev.slice(1), { 
-          time: newTimeStr, 
-          value: salinity 
-        }];
-        return newData;
+        // Keep the last 7 data points (sliding window)
+        return [
+          ...prev.slice(1),
+          {
+            time: newTimeStr,
+            value: salinity // Use current salinity state
+          }
+        ];
       });
-    }, 3000); 
+    }, 3000); // Updates every 3 seconds
 
     return () => clearInterval(interval);
   }, [salinity, temperature]);
