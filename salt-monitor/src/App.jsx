@@ -25,36 +25,37 @@ import {
 } from 'recharts';
 
 /**
- * SALINITY MONITORING DASHBOARD
+ * SALINITY MONITORING DASHBOARD (Final Integrated Version)
  * ------------------------------------------
  * Updates:
- * - Removed "Trends" menu from Sidebar.
- * - Kept Alerts with SMS/Push notification settings.
- * - Time is synced with real system time (every minute).
+ * - FIXED: Tab switching now works (Dashboard <-> Alerts).
+ * - ADDED: Alerts Page design matching your screenshot (4G Module Badge).
+ * - MAINTAINED: Real-time clock and 1-minute interval charts.
  */
 
 const App = () => {
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
-  // Notification States
+  // Alert Settings State
   const [smsEnabled, setSmsEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(true);
-  
+
   // Sensor Data State
   const [salinity, setSalinity] = useState(1.5); 
   const [temperature, setTemperature] = useState(29.2);
   
-  // Historic Data for Chart (Initialized with Real Time)
+  // Historic Data for Chart (Dynamic Real-Time Initialization)
   const [historyData, setHistoryData] = useState(() => {
     const data = [];
     const now = new Date();
-    // Generate last 7 points ending at current time, 1 minute interval back
+    const initialValues = [0.5, 0.8, 1.2, 1.4, 1.6, 1.5, 1.5];
+    
     for (let i = 6; i >= 0; i--) {
-      const d = new Date(now.getTime() - (i * 60000)); // 60000ms = 1 minute
+      const d = new Date(now.getTime() - (i * 60 * 1000));
       data.push({
         time: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-        value: 1.5 + (Math.random() * 0.2)
+        value: initialValues[6 - i] || 1.5
       });
     }
     return data;
@@ -63,22 +64,20 @@ const App = () => {
   // --- LOGIC: FRESHWATER VS BRACKISH FISH LIST ---
   const getEnvironmentStatus = (sal) => {
     if (sal <= 2.0) {
-      const fishList = "Tilapia, Hito, Dalag, Gurami, Ayungin, Martiniko, Biya, Carpa";
       return { 
         type: 'Freshwater', 
         message: 'LOW SALT CONTENT', 
-        sub: `Available: ${fishList}`, 
+        sub: `Available: Tilapia, Hito, Dalag, Gurami, Ayungin, Martiniko, Biya, Carpa`, 
         color: 'from-emerald-400 via-emerald-500 to-teal-600',
         icon: <Fish size={90} className="mb-6 drop-shadow-lg opacity-90 text-white" />
       };
     }
     
     if (sal > 2.0 && sal <= 10.0) {
-      const fishList = "Bangus, Apahap, Kanduli, Hipon, Sugpo, Talangka";
       return { 
         type: 'Brackish', 
         message: 'MODERATE SALT', 
-        sub: `Available: ${fishList}`, 
+        sub: `Available: Bangus, Apahap, Kanduli, Hipon, Sugpo, Talangka`, 
         color: 'from-sky-400 via-blue-500 to-indigo-600',
         icon: <Fish size={90} className="mb-6 drop-shadow-lg opacity-90 text-white" />
       };
@@ -106,26 +105,17 @@ const App = () => {
       
       setTemperature(prev => Math.max(26, Math.min(32, prev + (Math.random() - 0.5) * 0.1)));
       
-      // Update chart with REAL SYSTEM TIME
       setHistoryData(prev => {
-        const now = new Date(); // real system time (computer time)
-
-        const newTimeStr = now.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
+        const now = new Date(); 
+        const newTimeStr = now.toLocaleTimeString('en-US', { 
+          hour: 'numeric', 
+          minute: '2-digit', 
+          hour12: true 
         });
 
-        // Keep the last 7 data points (sliding window)
-        return [
-          ...prev.slice(1),
-          {
-            time: newTimeStr,
-            value: salinity 
-          }
-        ];
+        return [...prev.slice(1), { time: newTimeStr, value: salinity }];
       });
-    }, 3000); // Updates every 3 seconds
+    }, 3000); 
 
     return () => clearInterval(interval);
   }, [salinity, temperature]);
@@ -165,14 +155,13 @@ const App = () => {
             icon={<Activity size={20} />} 
             label="Monitor" 
             active={activeTab === 'Dashboard'} 
-            onClick={() => setActiveTab('Dashboard')}
+            onClick={() => { setActiveTab('Dashboard'); setSidebarOpen(false); }}
           />
-          {/* Removed Trends Sidebar Item */}
           <SidebarItem 
             icon={<Bell size={20} />} 
             label="Alerts" 
             active={activeTab === 'Alerts'} 
-            onClick={() => setActiveTab('Alerts')}
+            onClick={() => { setActiveTab('Alerts'); setSidebarOpen(false); }}
           />
         </nav>
 
@@ -187,7 +176,7 @@ const App = () => {
               <span className="font-bold text-sm tracking-wide">SYSTEM ONLINE</span>
             </div>
             <p className="text-xs text-emerald-600/70 font-medium pl-4">
-              4G Module Active
+              Smart Buoy Active
             </p>
           </div>
         </div>
@@ -210,12 +199,12 @@ const App = () => {
 
         <div className="flex-1 overflow-y-auto p-4 lg:p-10 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
           <div className="max-w-7xl mx-auto space-y-8">
-
-            {/* --- DASHBOARD VIEW --- */}
+            
+            {/* === DASHBOARD TAB === */}
             {activeTab === 'Dashboard' && (
               <>
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                  {/* Advisory Card */}
+                  {/* Main Advisory Card */}
                   <div className={`
                     lg:col-span-5 rounded-[2rem] p-8 flex flex-col justify-center items-center text-center text-white shadow-xl shadow-slate-200 transition-all duration-500 hover:shadow-2xl
                     bg-gradient-to-br ${status.color} relative overflow-hidden group border border-white/20
@@ -295,7 +284,7 @@ const App = () => {
                   </div>
                 </div>
 
-                {/* Bottom Chart Area */}
+                {/* Bottom Chart */}
                 <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 hover:shadow-lg transition-shadow duration-300">
                   <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
                     <div>
@@ -327,37 +316,40 @@ const App = () => {
               </>
             )}
 
-            {/* --- ALERTS VIEW (FIXED) --- */}
+            {/* === ALERTS TAB === */}
             {activeTab === 'Alerts' && (
-              <div className="max-w-3xl mx-auto space-y-6 pb-20">
+              <div className="max-w-3xl mx-auto space-y-6 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="mb-8">
                   <h1 className="text-3xl font-black text-slate-800 tracking-tight">Alert Settings</h1>
                   <p className="text-slate-500 mt-2">Manage how you receive water quality updates.</p>
                 </div>
 
-                {/* SMS Notification Card - RESPONSIVE FIX */}
+                {/* SMS Notification Card */}
                 <div className={`
-                  bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm border transition-all duration-300
+                  bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm border transition-all duration-300 relative overflow-hidden
                   ${smsEnabled ? 'border-sky-200 shadow-sky-100' : 'border-slate-100'}
                 `}>
-                  {/* Flex column on mobile, row on tablet/desktop */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
                     <div className="flex gap-5 items-start">
-                      <div className={`p-4 rounded-2xl shrink-0 ${smsEnabled ? 'bg-sky-50 text-sky-600' : 'bg-slate-50 text-slate-400'}`}>
+                      <div className={`p-4 rounded-2xl shrink-0 transition-colors duration-300 ${smsEnabled ? 'bg-sky-50 text-sky-600' : 'bg-slate-50 text-slate-400'}`}>
                         <MessageSquare size={28} />
                       </div>
                       <div>
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <h3 className="text-lg font-bold text-slate-800">SMS Notifications</h3>
-                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase rounded-md tracking-wider whitespace-nowrap">4G Active</span>
+                        <div className="flex flex-wrap items-center gap-3 mb-2">
+                          <h3 className="text-xl font-bold text-slate-800">SMS Notifications</h3>
+                          {smsEnabled && (
+                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase rounded-md tracking-wider shadow-sm">
+                              4G Module Enabled
+                            </span>
+                          )}
                         </div>
                         <p className="text-slate-500 text-sm leading-relaxed max-w-md">
-                          Receive text alerts via keypad phone or smartphone. Uses the onboard 4G module for areas without internet.
+                          Para sa mga gumagamit ng <strong>keypad phone</strong>. Makakatanggap kayo ng text message gamit ang aming 4G module kapag tumaas ang salt content.
                         </p>
                       </div>
                     </div>
                     
-                    {/* Fixed Toggle Switch */}
+                    {/* Toggle Switch */}
                     <div className="flex justify-end w-full sm:w-auto">
                       <button 
                         onClick={() => setSmsEnabled(!smsEnabled)}
@@ -377,26 +369,25 @@ const App = () => {
                   </div>
                 </div>
 
-                {/* Push Notification Card - RESPONSIVE FIX */}
+                {/* Push Notification Card */}
                 <div className={`
                   bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm border transition-all duration-300
                   ${pushEnabled ? 'border-indigo-200 shadow-indigo-100' : 'border-slate-100'}
                 `}>
-                  {/* Flex column on mobile, row on tablet/desktop */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <div className="flex gap-5 items-start">
-                      <div className={`p-4 rounded-2xl shrink-0 ${pushEnabled ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-400'}`}>
+                      <div className={`p-4 rounded-2xl shrink-0 transition-colors duration-300 ${pushEnabled ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-400'}`}>
                         <Smartphone size={28} />
                       </div>
                       <div>
-                        <h3 className="text-lg font-bold text-slate-800">Push Notifications</h3>
-                        <p className="text-slate-500 text-sm leading-relaxed max-w-md mt-1">
-                          Receive instant web alerts on your dashboard while connected to the internet.
+                        <h3 className="text-xl font-bold text-slate-800">Push Notifications</h3>
+                        <p className="text-slate-500 text-sm leading-relaxed max-w-md mt-2">
+                          Makatanggap ng notifications sa smartphone o laptop kung kayo ay online.
                         </p>
                       </div>
                     </div>
                     
-                    {/* Fixed Toggle Switch */}
+                    {/* Toggle Switch */}
                     <div className="flex justify-end w-full sm:w-auto">
                       <button 
                         onClick={() => setPushEnabled(!pushEnabled)}
@@ -450,14 +441,15 @@ const App = () => {
   );
 };
 
+// Sidebar Item (Matches Screenshot Design - Light Sky Blue)
 const SidebarItem = ({ icon, label, active, onClick }) => (
   <button 
     onClick={onClick}
     className={`
       w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 group font-medium
       ${active 
-        ? 'bg-sky-100 text-sky-700 shadow-sm' 
-        : 'text-slate-500 hover:bg-white hover:text-sky-600 hover:shadow-sm'
+        ? 'bg-sky-100 text-sky-700 shadow-sm' // Sky Blue Box, Darker Blue Text
+        : 'text-slate-500 hover:bg-slate-50 hover:text-sky-600 font-medium'
       }
     `}
   >
