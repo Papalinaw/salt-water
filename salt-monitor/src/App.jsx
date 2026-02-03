@@ -11,7 +11,10 @@ import {
   Wifi,
   MessageSquare,
   Smartphone,
-  Check
+  Check,
+  Save,
+  Phone,
+  XCircle // Added for error icons
 } from 'lucide-react';
 
 import { 
@@ -25,12 +28,11 @@ import {
 } from 'recharts';
 
 /**
- * SALINITY MONITORING DASHBOARD (Final Integrated Version)
+ * SALINITY MONITORING DASHBOARD (Custom Alerts)
  * ------------------------------------------
  * Updates:
- * - FIXED: Tab switching now works (Dashboard <-> Alerts).
- * - ADDED: Alerts Page design matching your screenshot (4G Module Badge).
- * - MAINTAINED: Real-time clock and 1-minute interval charts.
+ * - Replaced browser window.alert() with a custom designed Modal.
+ * - Improved UX for notifications.
  */
 
 const App = () => {
@@ -38,14 +40,19 @@ const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Alert Settings State
-  const [smsEnabled, setSmsEnabled] = useState(true);
+  const [smsEnabled, setSmsEnabled] = useState(false); 
   const [pushEnabled, setPushEnabled] = useState(true);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [isRegistered, setIsRegistered] = useState(false);
+
+  // Custom Alert Modal State
+  const [alertModal, setAlertModal] = useState({ show: false, title: '', message: '', type: 'default' });
 
   // Sensor Data State
   const [salinity, setSalinity] = useState(1.5); 
   const [temperature, setTemperature] = useState(29.2);
   
-  // Historic Data for Chart (Dynamic Real-Time Initialization)
+  // Historic Data for Chart
   const [historyData, setHistoryData] = useState(() => {
     const data = [];
     const now = new Date();
@@ -60,6 +67,41 @@ const App = () => {
     }
     return data;
   });
+
+  // --- HELPER: CUSTOM ALERT ---
+  const showCustomAlert = (title, message, type = 'default') => {
+    setAlertModal({ show: true, title, message, type });
+  };
+  
+  const closeAlert = () => setAlertModal(prev => ({ ...prev, show: false }));
+
+  // --- LOGIC: TOGGLE HANDLER ---
+  const handleSmsToggle = () => {
+    if (smsEnabled) {
+      setSmsEnabled(false);
+    } else {
+      if (isRegistered) {
+        setSmsEnabled(true);
+      } else {
+        // Gamit na ang custom alert
+        showCustomAlert(
+          "Paalala", 
+          "I-register muna ang phone number bago makatanggap ng text message", 
+          "warning"
+        );
+      }
+    }
+  };
+
+  const handleRegisterPhone = () => {
+    if (phoneNumber.length === 10) {
+      setIsRegistered(true);
+      showCustomAlert("Success", `Registered +63${phoneNumber} for SMS Alerts`, "success");
+      setSmsEnabled(true);
+    } else {
+      showCustomAlert("Error", "Ilagay ang valid 10-digit number", "error");
+    }
+  };
 
   // --- LOGIC: FRESHWATER VS BRACKISH FISH LIST ---
   const getEnvironmentStatus = (sal) => {
@@ -78,7 +120,7 @@ const App = () => {
         type: 'Brackish', 
         message: 'MODERATE SALT', 
         sub: `Available: Bangus, Apahap, Kanduli, Hipon, Sugpo, Talangka`, 
-        color: 'from-sky-400 via-blue-500 to-indigo-600',
+        color: 'from-sky-400 via-blue-500 to-sky-600',
         icon: <Fish size={90} className="mb-6 drop-shadow-lg opacity-90 text-white" />
       };
     }
@@ -121,8 +163,44 @@ const App = () => {
   }, [salinity, temperature]);
 
   return (
-    <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden selection:bg-blue-100">
+    <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden selection:bg-blue-100 relative">
       
+      {/* CUSTOM MODAL ALERT OVERLAY */}
+      {alertModal.show && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2rem] shadow-2xl p-6 max-w-sm w-full transform transition-all scale-100 animate-in zoom-in-95 duration-200 border border-white/20">
+            <div className="flex flex-col items-center text-center gap-4">
+              {/* Dynamic Icon based on type */}
+              <div className={`p-4 rounded-full shadow-sm ${
+                alertModal.type === 'warning' ? 'bg-orange-50 text-orange-500' :
+                alertModal.type === 'success' ? 'bg-emerald-50 text-emerald-500' :
+                alertModal.type === 'error' ? 'bg-red-50 text-red-500' :
+                'bg-blue-50 text-blue-500'
+              }`}>
+                {alertModal.type === 'warning' && <AlertTriangle size={32} strokeWidth={2} />}
+                {alertModal.type === 'success' && <Check size={32} strokeWidth={3} />}
+                {alertModal.type === 'error' && <XCircle size={32} strokeWidth={2} />}
+                {alertModal.type === 'default' && <Bell size={32} strokeWidth={2} />}
+              </div>
+              
+              <div className="space-y-1">
+                <h3 className="text-xl font-bold text-slate-800">{alertModal.title}</h3>
+                <p className="text-slate-500 text-sm leading-relaxed font-medium">
+                  {alertModal.message}
+                </p>
+              </div>
+
+              <button 
+                onClick={closeAlert}
+                className="w-full py-3.5 bg-sky-500 text-white rounded-xl font-bold text-sm hover:bg-slate-800 transition-all active:scale-95 shadow-lg shadow-slate-200 mt-2"
+              >
+                Okay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 
@@ -176,7 +254,7 @@ const App = () => {
               <span className="font-bold text-sm tracking-wide">SYSTEM ONLINE</span>
             </div>
             <p className="text-xs text-emerald-600/70 font-medium pl-4">
-              Smart Buoy Active
+              4G Module Active
             </p>
           </div>
         </div>
@@ -329,42 +407,96 @@ const App = () => {
                   bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm border transition-all duration-300 relative overflow-hidden
                   ${smsEnabled ? 'border-sky-500 shadow-sky-100' : 'border-slate-100'}
                 `}>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
-                    <div className="flex gap-5 items-start">
-                      <div className={`p-4 rounded-2xl shrink-0 transition-colors duration-300 ${smsEnabled ? 'bg-sky-50 text-sky-600' : 'bg-slate-50 text-slate-400'}`}>
-                        <MessageSquare size={28} />
-                      </div>
-                      <div>
-                        <div className="flex flex-wrap items-center gap-3 mb-2">
-                          <h3 className="text-xl font-bold text-slate-800">SMS Notifications</h3>
-                          {smsEnabled && (
-                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase rounded-md tracking-wider shadow-sm">
-                              4G Module Enabled
-                            </span>
-                          )}
+                  <div className="flex flex-col gap-6 relative z-10">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                      <div className="flex gap-5 items-start">
+                        <div className={`p-4 rounded-2xl shrink-0 transition-colors duration-300 ${smsEnabled ? 'bg-sky-50 text-sky-600' : 'bg-slate-50 text-slate-400'}`}>
+                          <MessageSquare size={28} />
                         </div>
-                        <p className="text-slate-500 text-sm leading-relaxed max-w-md">
-                          Para sa mga gumagamit ng <strong>keypad phone</strong>. Makakatanggap kayo ng text message gamit ang aming 4G module kapag tumaas ang salt content.
-                        </p>
+                        <div>
+                          <div className="flex flex-wrap items-center gap-3 mb-2">
+                            <h3 className="text-xl font-bold text-slate-800">SMS Notifications</h3>
+                            {smsEnabled && (
+                              <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase rounded-md tracking-wider shadow-sm">
+                                4G Module Enabled
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-slate-500 text-sm leading-relaxed max-w-md">
+                            Para sa mga gumagamit ng <strong>keypad phone</strong>. Makakatanggap kayo ng text message gamit ang aming 4G module kapag tumaas ang salt content.
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {/* Toggle Switch */}
+                      <div className="flex justify-end w-full sm:w-auto">
+                        <button 
+                          onClick={handleSmsToggle}
+                          className={`
+                            w-14 h-8 rounded-full relative transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-sky-100 shrink-0
+                            ${smsEnabled ? 'bg-sky-500' : 'bg-slate-200'}
+                          `}
+                        >
+                          <div className={`
+                            w-6 h-6 bg-white rounded-full absolute top-1 transition-transform duration-300 shadow-sm flex items-center justify-center
+                            ${smsEnabled ? 'translate-x-7' : 'translate-x-1'}
+                          `}>
+                            {smsEnabled && <Check size={12} className="text-sky-500 stroke-[3]" />}
+                          </div>
+                        </button>
                       </div>
                     </div>
-                    
-                    {/* Toggle Switch */}
-                    <div className="flex justify-end w-full sm:w-auto">
-                      <button 
-                        onClick={() => setSmsEnabled(!smsEnabled)}
-                        className={`
-                          w-14 h-8 rounded-full relative transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-sky-100 shrink-0
-                          ${smsEnabled ? 'bg-sky-500' : 'bg-slate-200'}
-                        `}
-                      >
-                        <div className={`
-                          w-6 h-6 bg-white rounded-full absolute top-1 transition-transform duration-300 shadow-sm flex items-center justify-center
-                          ${smsEnabled ? 'translate-x-7' : 'translate-x-1'}
-                        `}>
-                          {smsEnabled && <Check size={12} className="text-sky-500 stroke-[3]" />}
+
+                    {/* Registration Section (ALWAYS VISIBLE) */}
+                    <div className="mt-4 pt-6 border-t border-slate-100 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
+                        <Phone size={14} /> Register Phone Number
+                      </h4>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium select-none">+63</span>
+                          <input 
+                            type="tel" 
+                            maxLength="10"
+                            placeholder="9171234567"
+                            value={phoneNumber}
+                            onChange={(e) => {
+                              const val = e.target.value.replace(/\D/g, ''); // Only numbers
+                              if(val.length <= 10) setPhoneNumber(val);
+                            }}
+                            className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-700 font-medium tracking-wide transition-all"
+                          />
                         </div>
-                      </button>
+                        <button 
+                          onClick={handleRegisterPhone}
+                          className={`
+                            px-6 rounded-xl font-bold text-sm transition-all duration-200 flex items-center gap-2
+                            ${isRegistered 
+                              ? 'bg-emerald-100 text-emerald-700 cursor-default' 
+                              : 'bg-sky-500 text-white hover:bg-sky-600 shadow-lg shadow-sky-200 hover:shadow-sky-300 active:scale-95'
+                            }
+                          `}
+                        >
+                          {isRegistered ? (
+                            <>
+                              <Check size={16} /> Registered
+                            </>
+                          ) : (
+                            <>
+                              <Save size={16} /> Save
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      {isRegistered ? (
+                        <p className="text-emerald-600 text-xs mt-2 font-medium flex items-center gap-1">
+                          <Check size={12} strokeWidth={3} /> You will receive alerts on +63{phoneNumber}
+                        </p>
+                      ) : (
+                        <p className="text-slate-400 text-xs mt-2 italic">
+                          Please register your number to enable SMS alerts.
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -372,7 +504,7 @@ const App = () => {
                 {/* Push Notification Card */}
                 <div className={`
                   bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm border transition-all duration-300
-                  ${pushEnabled ? 'border-sky-500 shadow-sky-100' : 'border-slate-100'}
+                  ${pushEnabled ? 'border-sky-200 shadow-sky-100' : 'border-slate-100'}
                 `}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <div className="flex gap-5 items-start">
@@ -441,14 +573,13 @@ const App = () => {
   );
 };
 
-// Sidebar Item (Matches Screenshot Design - Light Sky Blue)
 const SidebarItem = ({ icon, label, active, onClick }) => (
   <button 
     onClick={onClick}
     className={`
       w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 group font-medium
       ${active 
-        ? 'bg-sky-100 text-sky-700 shadow-sm' // Sky Blue Box, Darker Blue Text
+        ? 'bg-sky-100 text-sky-700 shadow-sm' 
         : 'text-slate-500 hover:bg-slate-50 hover:text-sky-600 font-medium'
       }
     `}
