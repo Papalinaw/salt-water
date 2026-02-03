@@ -327,7 +327,7 @@ const App = () => {
                 {/* SMS Notification Card */}
                 <div className={`
                   bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm border transition-all duration-300 relative overflow-hidden
-                  ${smsEnabled ? 'border-sky-200 shadow-sky-100' : 'border-slate-100'}
+                  ${smsEnabled ? 'border-sky-500 shadow-sky-100' : 'border-slate-100'}
                 `}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 relative z-10">
                     <div className="flex gap-5 items-start">
@@ -372,11 +372,11 @@ const App = () => {
                 {/* Push Notification Card */}
                 <div className={`
                   bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm border transition-all duration-300
-                  ${pushEnabled ? 'border-indigo-200 shadow-indigo-100' : 'border-slate-100'}
+                  ${pushEnabled ? 'border-sky-500 shadow-sky-100' : 'border-slate-100'}
                 `}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <div className="flex gap-5 items-start">
-                      <div className={`p-4 rounded-2xl shrink-0 transition-colors duration-300 ${pushEnabled ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-400'}`}>
+                      <div className={`p-4 rounded-2xl shrink-0 transition-colors duration-300 ${pushEnabled ? 'bg-sky-50 text-sky-600' : 'bg-slate-50 text-slate-400'}`}>
                         <Smartphone size={28} />
                       </div>
                       <div>
@@ -392,15 +392,15 @@ const App = () => {
                       <button 
                         onClick={() => setPushEnabled(!pushEnabled)}
                         className={`
-                          w-14 h-8 rounded-full relative transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-indigo-100 shrink-0
-                          ${pushEnabled ? 'bg-indigo-500' : 'bg-slate-200'}
+                          w-14 h-8 rounded-full relative transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-sky-100 shrink-0
+                          ${pushEnabled ? 'bg-sky-500' : 'bg-slate-200'}
                         `}
                       >
                         <div className={`
                           w-6 h-6 bg-white rounded-full absolute top-1 transition-transform duration-300 shadow-sm flex items-center justify-center
                           ${pushEnabled ? 'translate-x-7' : 'translate-x-1'}
                         `}>
-                           {pushEnabled && <Check size={12} className="text-indigo-500 stroke-[3]" />}
+                           {pushEnabled && <Check size={12} className="text-sky-500 stroke-[3]" />}
                         </div>
                       </button>
                     </div>
