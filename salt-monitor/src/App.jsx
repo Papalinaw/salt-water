@@ -9,8 +9,8 @@ import {
   Menu,
   AlertTriangle,
   Wifi,
-  MessageSquare, // New icon for SMS
-  Smartphone,    // New icon for Push
+  MessageSquare,
+  Smartphone,
   Check
 } from 'lucide-react';
 
@@ -25,13 +25,12 @@ import {
 } from 'recharts';
 
 /**
- * SALINITY MONITORING DASHBOARD (Alerts & SMS Feature)
+ * SALINITY MONITORING DASHBOARD
  * ------------------------------------------
  * Updates:
- * - Removed "Trends" from Sidebar.
- * - Added "Alerts" View with SMS (4G) and Push Notification toggles.
- * - Optimized for keypad phone users via SMS logic.
- * - Time is now synced with real computer time.
+ * - Removed "Trends" menu from Sidebar.
+ * - Kept Alerts with SMS/Push notification settings.
+ * - Time is synced with real system time (every minute).
  */
 
 const App = () => {
@@ -41,7 +40,6 @@ const App = () => {
   // Notification States
   const [smsEnabled, setSmsEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(true);
-  const [phoneNumber, setPhoneNumber] = useState('0917xxxxxxx');
   
   // Sensor Data State
   const [salinity, setSalinity] = useState(1.5); 
@@ -56,7 +54,7 @@ const App = () => {
       const d = new Date(now.getTime() - (i * 60000)); // 60000ms = 1 minute
       data.push({
         time: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-        value: 1.5 + (Math.random() * 0.2) // Random initial value around current salinity
+        value: 1.5 + (Math.random() * 0.2)
       });
     }
     return data;
@@ -70,8 +68,8 @@ const App = () => {
         type: 'Freshwater', 
         message: 'LOW SALT CONTENT', 
         sub: `Available: ${fishList}`, 
-        color: 'from-emerald-400 to-green-600',
-        icon: <Fish size={90} className="mb-6 drop-shadow-md opacity-90 text-white" />
+        color: 'from-emerald-400 via-emerald-500 to-teal-600',
+        icon: <Fish size={90} className="mb-6 drop-shadow-lg opacity-90 text-white" />
       };
     }
     
@@ -81,8 +79,8 @@ const App = () => {
         type: 'Brackish', 
         message: 'MODERATE SALT', 
         sub: `Available: ${fishList}`, 
-        color: 'from-sky-400 to-cyan-600',
-        icon: <Fish size={90} className="mb-6 drop-shadow-md opacity-90 text-white" />
+        color: 'from-sky-400 via-blue-500 to-indigo-600',
+        icon: <Fish size={90} className="mb-6 drop-shadow-lg opacity-90 text-white" />
       };
     }
 
@@ -90,8 +88,8 @@ const App = () => {
       type: 'HighSalinity', 
       message: 'HIGH SALT CONTENT', 
       sub: 'Warning: Saltwater Intrusion (Risk of Fish Kill)', 
-      color: 'from-orange-400 to-red-500',
-      icon: <AlertTriangle size={80} className="mb-6 drop-shadow-md opacity-90 text-white" />
+      color: 'from-orange-400 via-red-500 to-pink-600',
+      icon: <AlertTriangle size={80} className="mb-6 drop-shadow-lg opacity-90 text-white" />
     };
   };
 
@@ -123,7 +121,7 @@ const App = () => {
           ...prev.slice(1),
           {
             time: newTimeStr,
-            value: salinity // Use current salinity state
+            value: salinity 
           }
         ];
       });
@@ -169,7 +167,7 @@ const App = () => {
             active={activeTab === 'Dashboard'} 
             onClick={() => setActiveTab('Dashboard')}
           />
-          {/* Removed Trends as requested */}
+          {/* Removed Trends Sidebar Item */}
           <SidebarItem 
             icon={<Bell size={20} />} 
             label="Alerts" 
@@ -329,86 +327,92 @@ const App = () => {
               </>
             )}
 
-            {/* --- ALERTS VIEW --- */}
+            {/* --- ALERTS VIEW (FIXED) --- */}
             {activeTab === 'Alerts' && (
-              <div className="max-w-3xl mx-auto space-y-6">
+              <div className="max-w-3xl mx-auto space-y-6 pb-20">
                 <div className="mb-8">
                   <h1 className="text-3xl font-black text-slate-800 tracking-tight">Alert Settings</h1>
                   <p className="text-slate-500 mt-2">Manage how you receive water quality updates.</p>
                 </div>
 
-                {/* SMS Notification Card */}
+                {/* SMS Notification Card - RESPONSIVE FIX */}
                 <div className={`
-                  bg-white rounded-[2rem] p-8 shadow-sm border transition-all duration-300
+                  bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm border transition-all duration-300
                   ${smsEnabled ? 'border-sky-200 shadow-sky-100' : 'border-slate-100'}
                 `}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex gap-6">
-                      <div className={`p-4 rounded-2xl ${smsEnabled ? 'bg-sky-50 text-sky-600' : 'bg-slate-50 text-slate-400'}`}>
-                        <MessageSquare size={32} />
+                  {/* Flex column on mobile, row on tablet/desktop */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                    <div className="flex gap-5 items-start">
+                      <div className={`p-4 rounded-2xl shrink-0 ${smsEnabled ? 'bg-sky-50 text-sky-600' : 'bg-slate-50 text-slate-400'}`}>
+                        <MessageSquare size={28} />
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-slate-800">SMS Notifications</h3>
-                        <div className="flex items-center gap-2 mt-1 mb-2">
-                           <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase rounded-md tracking-wider">4G Module Enabled</span>
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h3 className="text-lg font-bold text-slate-800">SMS Notifications</h3>
+                          <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase rounded-md tracking-wider whitespace-nowrap">4G Active</span>
                         </div>
-                        <p className="text-slate-500 text-sm leading-relaxed max-w-sm">
-                          Para sa mga gumagamit ng <strong>keypad phone</strong>. Makakatanggap kayo ng text message gamit ang aming 4G module kapag tumaas ang salt content.
+                        <p className="text-slate-500 text-sm leading-relaxed max-w-md">
+                          Receive text alerts via keypad phone or smartphone. Uses the onboard 4G module for areas without internet.
                         </p>
                       </div>
                     </div>
                     
-                    {/* Toggle Switch */}
-                    <button 
-                      onClick={() => setSmsEnabled(!smsEnabled)}
-                      className={`
-                        w-16 h-9 rounded-full relative transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-sky-100
-                        ${smsEnabled ? 'bg-sky-500' : 'bg-slate-200'}
-                      `}
-                    >
-                      <div className={`
-                        w-7 h-7 bg-white rounded-full absolute top-1 transition-all duration-300 shadow-sm flex items-center justify-center
-                        ${smsEnabled ? 'left-8' : 'left-1'}
-                      `}>
-                        {smsEnabled && <Check size={14} className="text-sky-500 stroke-[3]" />}
-                      </div>
-                    </button>
+                    {/* Fixed Toggle Switch */}
+                    <div className="flex justify-end w-full sm:w-auto">
+                      <button 
+                        onClick={() => setSmsEnabled(!smsEnabled)}
+                        className={`
+                          w-14 h-8 rounded-full relative transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-sky-100 shrink-0
+                          ${smsEnabled ? 'bg-sky-500' : 'bg-slate-200'}
+                        `}
+                      >
+                        <div className={`
+                          w-6 h-6 bg-white rounded-full absolute top-1 transition-transform duration-300 shadow-sm flex items-center justify-center
+                          ${smsEnabled ? 'translate-x-7' : 'translate-x-1'}
+                        `}>
+                          {smsEnabled && <Check size={12} className="text-sky-500 stroke-[3]" />}
+                        </div>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
-                {/* Push Notification Card */}
+                {/* Push Notification Card - RESPONSIVE FIX */}
                 <div className={`
-                  bg-white rounded-[2rem] p-8 shadow-sm border transition-all duration-300
+                  bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm border transition-all duration-300
                   ${pushEnabled ? 'border-indigo-200 shadow-indigo-100' : 'border-slate-100'}
                 `}>
-                  <div className="flex items-start justify-between">
-                    <div className="flex gap-6">
-                      <div className={`p-4 rounded-2xl ${pushEnabled ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-400'}`}>
-                        <Smartphone size={32} />
+                  {/* Flex column on mobile, row on tablet/desktop */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+                    <div className="flex gap-5 items-start">
+                      <div className={`p-4 rounded-2xl shrink-0 ${pushEnabled ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-400'}`}>
+                        <Smartphone size={28} />
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold text-slate-800">Push Notifications</h3>
-                        <p className="text-slate-500 text-sm leading-relaxed max-w-sm mt-2">
-                          Makatanggap ng notifications sa smartphone o laptop kung kayo ay online.
+                        <h3 className="text-lg font-bold text-slate-800">Push Notifications</h3>
+                        <p className="text-slate-500 text-sm leading-relaxed max-w-md mt-1">
+                          Receive instant web alerts on your dashboard while connected to the internet.
                         </p>
                       </div>
                     </div>
                     
-                    {/* Toggle Switch */}
-                    <button 
-                      onClick={() => setPushEnabled(!pushEnabled)}
-                      className={`
-                        w-16 h-9 rounded-full relative transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-indigo-100
-                        ${pushEnabled ? 'bg-indigo-500' : 'bg-slate-200'}
-                      `}
-                    >
-                      <div className={`
-                        w-7 h-7 bg-white rounded-full absolute top-1 transition-all duration-300 shadow-sm flex items-center justify-center
-                        ${pushEnabled ? 'left-8' : 'left-1'}
-                      `}>
-                         {pushEnabled && <Check size={14} className="text-indigo-500 stroke-[3]" />}
-                      </div>
-                    </button>
+                    {/* Fixed Toggle Switch */}
+                    <div className="flex justify-end w-full sm:w-auto">
+                      <button 
+                        onClick={() => setPushEnabled(!pushEnabled)}
+                        className={`
+                          w-14 h-8 rounded-full relative transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-indigo-100 shrink-0
+                          ${pushEnabled ? 'bg-indigo-500' : 'bg-slate-200'}
+                        `}
+                      >
+                        <div className={`
+                          w-6 h-6 bg-white rounded-full absolute top-1 transition-transform duration-300 shadow-sm flex items-center justify-center
+                          ${pushEnabled ? 'translate-x-7' : 'translate-x-1'}
+                        `}>
+                           {pushEnabled && <Check size={12} className="text-indigo-500 stroke-[3]" />}
+                        </div>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
