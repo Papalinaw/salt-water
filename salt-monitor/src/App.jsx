@@ -41,7 +41,7 @@ const App = () => {
   
   // Alert Settings State
   const [smsEnabled, setSmsEnabled] = useState(false); 
-  const [pushEnabled, setPushEnabled] = useState(true);
+  const [pushEnabled, setPushEnabled] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isRegistered, setIsRegistered] = useState(false);
 
@@ -504,7 +504,7 @@ const App = () => {
                 {/* Push Notification Card */}
                 <div className={`
                   bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm border transition-all duration-300
-                  ${pushEnabled ? 'border-sky-200 shadow-sky-100' : 'border-slate-100'}
+                  ${pushEnabled ? 'border-sky-500 shadow-sky-100' : 'border-slate-100'}
                 `}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <div className="flex gap-5 items-start">
