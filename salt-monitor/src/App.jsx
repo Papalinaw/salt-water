@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Activity, 
-  History, 
   Bell, 
   Thermometer, 
   Droplets, 
@@ -14,7 +13,10 @@ import {
   Check,
   Save,
   Phone,
-  XCircle // Added for error icons
+  XCircle,
+  Lock,
+  User,
+  LogOut // Icon for Logout
 } from 'lucide-react';
 
 import { 
@@ -28,14 +30,183 @@ import {
 } from 'recharts';
 
 /**
- * SALINITY MONITORING DASHBOARD (Custom Alerts)
+ * SALINITY MONITORING DASHBOARD (Real Local Authentication)
  * ------------------------------------------
  * Updates:
- * - Replaced browser window.alert() with a custom designed Modal.
- * - Improved UX for notifications.
+ * - Removed "Demo" credentials.
+ * - Added "Create Account" feature.
+ * - Uses LocalStorage to save/verify users (Persistent).
+ * - Added Logout functionality.
  */
 
+// --- LOGIN / REGISTER COMPONENT ---
+const LoginScreen = ({ onLogin }) => {
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    setError('');
+    
+    // Get stored user
+    const storedUser = localStorage.getItem('aqualiv_user');
+    
+    if (!storedUser) {
+      setError('No account found. Please register first.');
+      return;
+    }
+
+    const user = JSON.parse(storedUser);
+
+    if (username === user.username && password === user.password) {
+      onLogin();
+    } else {
+      setError('Invalid Username or Password.');
+    }
+  };
+
+  const handleRegister = (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!username || !password) {
+      setError('Please fill in all fields.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+
+    // Save to Local Storage (Real Data Persistence)
+    const newUser = { username, password };
+    localStorage.setItem('aqualiv_user', JSON.stringify(newUser));
+    
+    setSuccessMsg('Account created successfully! You can now login.');
+    setIsRegistering(false);
+    setPassword('');
+    setConfirmPassword('');
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 font-sans p-4">
+      <div className="bg-white p-8 sm:p-10 rounded-[2rem] shadow-xl shadow-sky-100 border border-slate-100 w-full max-w-md">
+        <div className="flex flex-col items-center mb-8">
+          <img 
+            src="image.png" 
+            alt="Aqualiv Logo" 
+            className="h-20 w-auto object-contain mb-4" 
+            onError={(e) => {
+              e.target.onerror = null; 
+              e.target.style.display = 'none'; 
+              e.target.parentNode.innerHTML = '<span class="text-sky-600 font-bold text-3xl tracking-tighter">Aqualiv</span>';
+            }}
+          />
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
+            {isRegistering ? 'Create Account' : 'Welcome Back'}
+          </h1>
+          <p className="text-slate-500 text-sm">
+            {isRegistering ? 'Set up your secure access' : 'Sign in to monitor water quality'}
+          </p>
+        </div>
+
+        <form onSubmit={isRegistering ? handleRegister : handleLogin} className="space-y-5">
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Username</label>
+            <div className="relative">
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <input 
+                type="text" 
+                placeholder="Choose username"
+                className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-700 font-medium transition-all"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Password</label>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <input 
+                type="password" 
+                placeholder="••••••••"
+                className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-700 font-medium transition-all"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {isRegistering && (
+            <div className="space-y-1 animate-in fade-in slide-in-from-top-2">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Confirm Password</label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input 
+                  type="password" 
+                  placeholder="••••••••"
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-700 font-medium transition-all"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex items-center gap-2 text-red-600 text-sm animate-pulse">
+              <XCircle size={16} />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {successMsg && !isRegistering && (
+            <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center gap-2 text-emerald-600 text-sm">
+              <Check size={16} />
+              <span>{successMsg}</span>
+            </div>
+          )}
+
+          <button 
+            type="submit"
+            className="w-full py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-sky-200 transition-all active:scale-95 flex items-center justify-center gap-2"
+          >
+            {isRegistering ? 'Register' : 'Sign In'}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-sm text-slate-500">
+            {isRegistering ? "Already have an account? " : "Don't have an account? "}
+            <button 
+              onClick={() => {
+                setIsRegistering(!isRegistering);
+                setError('');
+                setSuccessMsg('');
+              }}
+              className="text-sky-600 font-bold hover:underline"
+            >
+              {isRegistering ? 'Sign In' : 'Create One'}
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- MAIN APP COMPONENT ---
 const App = () => {
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   const [activeTab, setActiveTab] = useState('Dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
@@ -51,6 +222,24 @@ const App = () => {
   // Sensor Data State
   const [salinity, setSalinity] = useState(1.5); 
   const [temperature, setTemperature] = useState(29.2);
+  
+  // Check for existing session
+  useEffect(() => {
+    const session = sessionStorage.getItem('aqualiv_session');
+    if (session === 'active') {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handleLoginSuccess = () => {
+    sessionStorage.setItem('aqualiv_session', 'active');
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('aqualiv_session');
+    setIsAuthenticated(false);
+  };
   
   // Historic Data for Chart
   const [historyData, setHistoryData] = useState(() => {
@@ -83,7 +272,6 @@ const App = () => {
       if (isRegistered) {
         setSmsEnabled(true);
       } else {
-        // Gamit na ang custom alert
         showCustomAlert(
           "Paalala", 
           "I-register muna ang phone number bago makatanggap ng text message", 
@@ -161,6 +349,11 @@ const App = () => {
 
     return () => clearInterval(interval);
   }, [salinity, temperature]);
+
+  // --- RENDER LOGIN OR DASHBOARD ---
+  if (!isAuthenticated) {
+    return <LoginScreen onLogin={handleLoginSuccess} />;
+  }
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden selection:bg-blue-100 relative">
@@ -243,8 +436,19 @@ const App = () => {
           />
         </nav>
 
+        {/* LOGOUT BUTTON */}
+        <div className="p-4 border-t border-slate-50">
+           <button 
+             onClick={handleLogout}
+             className="w-full flex items-center justify-center gap-2 p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors font-semibold text-sm"
+           >
+             <LogOut size={18} />
+             Sign Out
+           </button>
+        </div>
+
         {/* System Status */}
-        <div className="p-6 border-t border-slate-50">
+        <div className="p-6 pt-2">
           <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-2xl p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-1 text-emerald-700">
               <div className="relative">
@@ -385,7 +589,10 @@ const App = () => {
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                         <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 500 }} dy={10} />
                         <YAxis domain={[0, 15]} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 500 }} label={{ value: 'Salt (ppt)', angle: -90, position: 'insideLeft', fill: '#94a3b8', fontSize: 10, fontWeight: 700 }} />
-                        <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)', fontFamily: 'sans-serif' }} itemStyle={{ color: '#1e293b', fontWeight: 700 }} />
+                        <Tooltip 
+                          contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgb(0 0 0 / 0.1)', fontFamily: 'sans-serif' }} 
+                          itemStyle={{ color: '#1e293b', fontWeight: 700 }} 
+                        />
                         <Area type="monotone" dataKey="value" stroke="#0ea5e9" strokeWidth={4} fillOpacity={1} fill="url(#colorMain)" animationDuration={1500} />
                       </AreaChart>
                     </ResponsiveContainer>
@@ -447,7 +654,7 @@ const App = () => {
                       </div>
                     </div>
 
-                    {/* Registration Section (ALWAYS VISIBLE) */}
+                    {/* Registration Section */}
                     <div className="mt-4 pt-6 border-t border-slate-100 animate-in fade-in slide-in-from-top-2 duration-300">
                       <h4 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
                         <Phone size={14} /> Register Phone Number
@@ -461,7 +668,7 @@ const App = () => {
                             placeholder="9171234567"
                             value={phoneNumber}
                             onChange={(e) => {
-                              const val = e.target.value.replace(/\D/g, ''); // Only numbers
+                              const val = e.target.value.replace(/\D/g, ''); 
                               if(val.length <= 10) setPhoneNumber(val);
                             }}
                             className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 text-slate-700 font-medium tracking-wide transition-all"
@@ -504,11 +711,11 @@ const App = () => {
                 {/* Push Notification Card */}
                 <div className={`
                   bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm border transition-all duration-300
-                  ${pushEnabled ? 'border-sky-500 shadow-sky-100' : 'border-slate-100'}
+                  ${pushEnabled ? 'border-indigo-200 shadow-indigo-100' : 'border-slate-100'}
                 `}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <div className="flex gap-5 items-start">
-                      <div className={`p-4 rounded-2xl shrink-0 transition-colors duration-300 ${pushEnabled ? 'bg-sky-50 text-sky-600' : 'bg-slate-50 text-slate-400'}`}>
+                      <div className={`p-4 rounded-2xl shrink-0 transition-colors duration-300 ${pushEnabled ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-400'}`}>
                         <Smartphone size={28} />
                       </div>
                       <div>
@@ -524,15 +731,15 @@ const App = () => {
                       <button 
                         onClick={() => setPushEnabled(!pushEnabled)}
                         className={`
-                          w-14 h-8 rounded-full relative transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-sky-100 shrink-0
-                          ${pushEnabled ? 'bg-sky-500' : 'bg-slate-200'}
+                          w-14 h-8 rounded-full relative transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-indigo-100 shrink-0
+                          ${pushEnabled ? 'bg-indigo-500' : 'bg-slate-200'}
                         `}
                       >
                         <div className={`
                           w-6 h-6 bg-white rounded-full absolute top-1 transition-transform duration-300 shadow-sm flex items-center justify-center
                           ${pushEnabled ? 'translate-x-7' : 'translate-x-1'}
                         `}>
-                           {pushEnabled && <Check size={12} className="text-sky-500 stroke-[3]" />}
+                           {pushEnabled && <Check size={12} className="text-indigo-500 stroke-[3]" />}
                         </div>
                       </button>
                     </div>
