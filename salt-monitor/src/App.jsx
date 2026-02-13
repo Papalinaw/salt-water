@@ -16,7 +16,7 @@ import {
   XCircle,
   Lock,
   User,
-  LogOut // Icon for Logout
+  LogOut 
 } from 'lucide-react';
 
 import { 
@@ -30,13 +30,10 @@ import {
 } from 'recharts';
 
 /**
- * SALINITY MONITORING DASHBOARD (Real Local Authentication)
+ * SALINITY MONITORING DASHBOARD (Red Logout Bar)
  * ------------------------------------------
  * Updates:
- * - Removed "Demo" credentials.
- * - Added "Create Account" feature.
- * - Uses LocalStorage to save/verify users (Persistent).
- * - Added Logout functionality.
+ * - Styled "Sign Out" button to look like a Red Bar (Button) for better visibility.
  */
 
 // --- LOGIN / REGISTER COMPONENT ---
@@ -436,13 +433,13 @@ const App = () => {
           />
         </nav>
 
-        {/* LOGOUT BUTTON */}
+        {/* LOGOUT BUTTON - WITH RED BAR STYLE */}
         <div className="p-4 border-t border-slate-50">
            <button 
              onClick={handleLogout}
-             className="w-full flex items-center justify-center gap-2 p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors font-semibold text-sm"
+             className="w-full flex items-center justify-center gap-3 p-3.5 bg-red-50 text-red-600 rounded-2xl transition-all hover:bg-red-500 hover:text-white hover:shadow-lg hover:shadow-red-200 font-bold text-sm"
            >
-             <LogOut size={18} />
+             <LogOut size={18} strokeWidth={2.5} />
              Sign Out
            </button>
         </div>
@@ -711,11 +708,11 @@ const App = () => {
                 {/* Push Notification Card */}
                 <div className={`
                   bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm border transition-all duration-300
-                  ${pushEnabled ? 'border-indigo-200 shadow-indigo-100' : 'border-slate-100'}
+                  ${pushEnabled ? 'border-sky-500 shadow-sky-100' : 'border-slate-100'}
                 `}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <div className="flex gap-5 items-start">
-                      <div className={`p-4 rounded-2xl shrink-0 transition-colors duration-300 ${pushEnabled ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-50 text-slate-400'}`}>
+                      <div className={`p-4 rounded-2xl shrink-0 transition-colors duration-300 ${pushEnabled ? 'bg-sky-50 text-sky-600' : 'bg-slate-50 text-slate-400'}`}>
                         <Smartphone size={28} />
                       </div>
                       <div>
@@ -731,15 +728,15 @@ const App = () => {
                       <button 
                         onClick={() => setPushEnabled(!pushEnabled)}
                         className={`
-                          w-14 h-8 rounded-full relative transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-indigo-100 shrink-0
-                          ${pushEnabled ? 'bg-indigo-500' : 'bg-slate-200'}
+                          w-14 h-8 rounded-full relative transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-sky-100 shrink-0
+                          ${pushEnabled ? 'bg-sky-500' : 'bg-slate-200'}
                         `}
                       >
                         <div className={`
                           w-6 h-6 bg-white rounded-full absolute top-1 transition-transform duration-300 shadow-sm flex items-center justify-center
                           ${pushEnabled ? 'translate-x-7' : 'translate-x-1'}
                         `}>
-                           {pushEnabled && <Check size={12} className="text-indigo-500 stroke-[3]" />}
+                           {pushEnabled && <Check size={12} className="text-sky-500 stroke-[3]" />}
                         </div>
                       </button>
                     </div>
